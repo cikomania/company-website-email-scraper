@@ -38,17 +38,189 @@ MAX_BODY = 15000
 # CHROME
 # =====================================================
 
-options = Options()
+def chrome_baslat():
 
-options.debugger_address = "127.0.0.1:9222"
+    print("\n  → Chrome başlatılıyor...")
 
-driver = webdriver.Chrome(
-    service=Service(
-        ChromeDriverManager().install()
-    ),
-    options=options
-)
+    options = Options()
 
+    options.debugger_address = "127.0.0.1:9222"
+
+    options.page_load_strategy = "eager"
+
+    driver = webdriver.Chrome(
+        service=Service(
+            ChromeDriverManager().install()
+        ),
+        options=options
+    )
+
+    driver.set_page_load_timeout(15)
+
+    print("  ✓ Chrome hazır")
+
+    return driver
+
+
+driver = chrome_baslat()
+
+# =====================================================
+# CHROME YENİDEN BAŞLAT
+# =====================================================
+
+def chrome_yeniden_baslat():
+
+    global driver
+
+    print("\n  ⚠ Chrome takıldı.")
+    print("  → Chrome yeniden başlatılıyor...")
+
+    try:
+        driver.quit()
+    except:
+        pass
+
+    time.sleep(2)
+
+    driver = chrome_baslat()
+
+    time.sleep(2)
+
+    # Google ana sayfasını aç
+    try:
+        driver.get("https://www.google.com/")
+        time.sleep(3)
+        print("  ✓ Google yeniden açıldı")
+    except Exception as e:
+        print(
+            "  ! Google açılırken hata:",
+            type(e).__name__
+        )
+
+    return driver
+
+# =====================================================
+# GOOGLE ARAMA - HATA KONTROLLÜ
+# =====================================================
+
+def google_arama(firma, max_deneme=3):
+
+    global driver
+
+    arama_url = (
+        "https://www.google.com/search?q="
+        + quote(firma)
+    )
+
+    for deneme in range(1, max_deneme + 1):
+
+        print(
+            f"  → Google aranıyor "
+            f"(deneme {deneme}/{max_deneme})..."
+        )
+
+        try:
+
+            driver.set_page_load_timeout(15)
+
+            driver.get(arama_url)
+
+            WebDriverWait(
+                driver,
+                15
+            ).until(
+                EC.presence_of_element_located(
+                    (
+                        By.ID,
+                        "search"
+                    )
+                )
+            )
+
+            time.sleep(
+                random.uniform(
+                    *BEKLEME
+                )
+            )
+
+            print("  ✓ Google araması hazır")
+
+            return True
+
+        except Exception as e:
+
+            print(
+                f"  ⚠ Google hatası: "
+                f"{type(e).__name__}"
+            )
+
+            print(
+                "  → Google ana sayfasına gidiliyor..."
+            )
+
+            # -------------------------------------------------
+            # ÖNCE GOOGLE.COM'A GİT
+            # -------------------------------------------------
+
+            try:
+
+                driver.set_page_load_timeout(10)
+
+                driver.get(
+                    "https://www.google.com/"
+                )
+
+                time.sleep(3)
+
+                print(
+                    "  ✓ Google ana sayfası açıldı"
+                )
+
+            except Exception as google_hata:
+
+                print(
+                    "  ! Google ana sayfası da açılamadı:",
+                    type(google_hata).__name__
+                )
+
+            # -------------------------------------------------
+            # SON DENEMEDEN ÖNCE CHROME'U YENİLE
+            # -------------------------------------------------
+
+            if deneme < max_deneme:
+
+                print(
+                    "  → Birkaç saniye bekleniyor..."
+                )
+
+                time.sleep(3)
+
+            # -------------------------------------------------
+            # CHROME TAMAMEN TAKILDIYSA YENİDEN BAŞLAT
+            # -------------------------------------------------
+
+            if deneme == 2:
+
+                try:
+
+                    print(
+                        "  → Chrome yanıt vermiyor olabilir."
+                    )
+
+                    chrome_yeniden_baslat()
+
+                except Exception as restart_hata:
+
+                    print(
+                        "  ! Chrome yeniden başlatılamadı:",
+                        restart_hata
+                    )
+
+    print(
+        "  ✗ Google 3 denemede de açılamadı."
+    )
+
+    return False
 
 # =====================================================
 # EXCEL
@@ -152,6 +324,7 @@ IGNORE = {
     "emlakkulisi",
     "medium.com",
     "eksisozluk.com",
+    "happycenter.com",
 
     "ticaretsicil.gov.tr",
     "ito.org.tr",
@@ -1097,25 +1270,25 @@ def site_dogrula(
 
         try:
 
-            driver.set_page_load_timeout(
-                10
-            )
+            driver.set_page_load_timeout(10)
 
-            driver.get(
-                url
-            )
+            driver.get(url)
 
-        except:
+        except Exception as e:
+
+            print(
+                f"    ! Site yükleme timeout/hatası: "
+                f"{type(e).__name__}"
+            )
 
             try:
-
                 driver.execute_script(
                     "window.stop();"
                 )
-
             except:
-
                 pass
+
+            time.sleep(1)
 
 
         WebDriverWait(
@@ -1182,7 +1355,8 @@ def site_dogrula(
                     f"    → İletişim sayfası: {link}"
                 )
 
-
+                driver.set_page_load_timeout(10)
+                
                 driver.get(
                     link
                 )
@@ -1551,35 +1725,51 @@ for i, (_, row) in enumerate(
         # GOOGLE
         # =================================================
 
-        print(
-            "  → Google aranıyor..."
+        google_basarili = google_arama(
+            firma
         )
 
+        if not google_basarili:
 
-        driver.get(
-            "https://www.google.com/search?q="
-            + quote(firma)
-        )
-
-
-        WebDriverWait(
-            driver,
-            20
-        ).until(
-            EC.presence_of_element_located(
-                (
-                    By.ID,
-                    "search"
-                )
+            print(
+                "  ✗ Google kullanılamadı."
             )
-        )
 
+            durum = "GOOGLE HATASI"
 
-        time.sleep(
-            random.uniform(
-                *BEKLEME
-            )
-        )
+            # Bu firmayı kaydet ve sonraki firmaya geç
+            sonuclar.append({
+
+                "UNVAN":
+                    firma,
+
+                "ITO_ADRES":
+                    ito_adres,
+
+                "ITO_ILCE":
+                    ito_ilce,
+
+                "WEB":
+                    "",
+
+                "MAIL":
+                    "",
+
+                "WEB_ILCE":
+                    "",
+
+                "ADRES_DURUMU":
+                    "",
+
+                "DURUM":
+                    durum,
+
+                "SITE_PUANI":
+                    0
+
+            })
+
+            continue
 
 
         google_sonuclari = (
