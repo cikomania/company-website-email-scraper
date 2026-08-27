@@ -1,8 +1,10 @@
 # Company Website & Email Scraper
 
-An automated Python tool for finding and verifying company websites and extracting email addresses from an Excel file containing company names, addresses, and districts, currently focused on companies registered in Istanbul, Türkiye.
+An automated Python tool for finding and verifying company websites and extracting email addresses from an Excel file containing company names, addresses, and districts.
 
-The tool uses Google Search to find potential company websites, evaluates candidates based on company-name similarity, verifies websites with Selenium, checks address/district information, extracts email addresses, and exports the results to Excel.
+The tool uses Google Search to find potential company websites, evaluates candidates based on company-name similarity, verifies websites with Selenium, checks address/district information, extracts email addresses, and exports the results to Excel.  
+
+The scraper can be used for different cities by configuring the city and district information through `ilceler.txt`.
 
 ## Tech Stack
 
@@ -28,7 +30,15 @@ Example:
 
 | UNVAN | ADRES | ILCE |
 |---|---|---|
-| Example Company Ltd. | Example Address | TUZLA |
+| Example Company Ltd. | Example Address | Sisli |
+
+## City & District Configuration
+
+The scraper is designed to work with different cities.
+
+City and district information is maintained separately in `ilceler.txt`, making it easier to switch between cities or update district lists without searching through the main Python script.  
+
+For another city, replace the city name and district list in the configuration.
 
 ## Output
 
@@ -36,16 +46,17 @@ The program creates `firmalar_web_mail.xlsx`.
 
 The output contains:
 
-`UNVAN`, `ITO_ADRES`, `ITO_ILCE`, `WEB`, `MAIL`, `WEB_ILCE`, `ADRES_DURUMU`, `DURUM`, `SITE_PUANI`
+`UNVAN`, `KAYNAK_ADRES`, `KAYNAK_ILCE`, `WEB`, `MAIL`, `WEB_ILCE`, `ADRES_DURUMU`, `DURUM`, `SITE_PUANI`
 
 ## Project Structure
 
 ```text
 firmalar/
-├── sitemailbul.py
+├── venv/
 ├── firmalar.xlsx
 ├── firmalar_web_mail.xlsx
-└── venv/
+├── ilceler.txt
+└── sitemailbul.py
 ```
 
 ## Installation
