@@ -314,6 +314,7 @@ IGNORE = {
 
     "ticaretsicil.gov.tr",
     "ito.org.tr",
+    "atonet.org.tr"
 
     ".gov.tr",
     ".edu.tr",
@@ -1252,7 +1253,7 @@ def iletisim_linklerini_bul():
 
 def site_dogrula(
     unvan,
-    ito_ilce,
+    kaynak_ilce,
     url
 ):
 
@@ -1488,8 +1489,8 @@ def site_dogrula(
         # ADRES DURUMU
         # =================================================
 
-        ito_ilce_temiz = temizle(
-            ito_ilce
+        kaynak_ilce_temiz = temizle(
+            kaynak_ilce
         ).strip()
 
 
@@ -1506,7 +1507,7 @@ def site_dogrula(
 
         elif (
             web_ilce_temiz
-            == ito_ilce_temiz
+            == kaynak_ilce_temiz
         ):
 
             adres_durumu = (
@@ -1570,7 +1571,7 @@ def site_dogrula(
 
             if (
                 web_ilce_temiz
-                == ito_ilce_temiz
+                == kaynak_ilce_temiz
             ):
 
                 durum = (
@@ -1675,12 +1676,12 @@ for i, (_, row) in enumerate(
     ).strip()
 
 
-    ito_adres = str(
+    kaynak_adres = str(
         row["ADRES"]
     ).strip()
 
 
-    ito_ilce = str(
+    kaynak_ilce = str(
         row["ILCE"]
     ).strip()
 
@@ -1697,12 +1698,12 @@ for i, (_, row) in enumerate(
 
 
     print(
-        f"İTO İlçe : {ito_ilce}"
+        f"Kaynak İlçe : {kaynak_ilce}"
     )
 
 
     print(
-        f"İTO Adres: {ito_adres}"
+        f"Kaynak Adres: {kaynak_adres}"
     )
 
 
@@ -1747,11 +1748,11 @@ for i, (_, row) in enumerate(
                 "UNVAN":
                     firma,
 
-                "ITO_ADRES":
-                    ito_adres,
+                "KAYNAK_ADRES":
+                    kaynak_adres,
 
-                "ITO_ILCE":
-                    ito_ilce,
+                "KAYNAK_ILCE":
+                    kaynak_ilce,
 
                 "WEB":
                     "",
@@ -2016,7 +2017,7 @@ for i, (_, row) in enumerate(
 
             sonuc = site_dogrula(
                 firma,
-                ito_ilce,
+                kaynak_ilce,
                 aday["url"]
             )
 
@@ -2129,11 +2130,11 @@ for i, (_, row) in enumerate(
         "UNVAN":
             firma,
 
-        "ITO_ADRES":
-            ito_adres,
+        "KAYNAK_ADRES":
+            kaynak_adres,
 
-        "ITO_ILCE":
-            ito_ilce,
+        "KAYNAK_ILCE":
+            kaynak_ilce,
 
         "WEB":
             bulunan_site,
