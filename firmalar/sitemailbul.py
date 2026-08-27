@@ -235,49 +235,35 @@ print("\nToplam firma:", len(df))
 
 
 # =====================================================
-# İSTANBUL İLÇELERİ
+# ŞEHİR / İLÇE AYARLARI
 # =====================================================
 
-ISTANBUL_ILCELERI = {
-    "adalar",
-    "arnavutkoy",
-    "atasehir",
-    "avcilar",
-    "bagcilar",
-    "bahcelievler",
-    "bakirkoy",
-    "basaksehir",
-    "bayrampasa",
-    "besiktas",
-    "beykoz",
-    "beylikduzu",
-    "beyoglu",
-    "buyukcekmece",
-    "catalca",
-    "cekmekoy",
-    "esenler",
-    "esenyurt",
-    "eyupsultan",
-    "fatih",
-    "gaziosmanpasa",
-    "gungoren",
-    "kadikoy",
-    "kagithane",
-    "kartal",
-    "kucukcekmece",
-    "maltepe",
-    "pendik",
-    "sancaktepe",
-    "sariyer",
-    "silivri",
-    "sultanbeyli",
-    "sultangazi",
-    "sisli",
-    "sile",
-    "tuzla",
-    "umraniye",
-    "uskudar",
-    "zeytinburnu"
+SEHIR = "Ankara"
+
+SEHIR_ILCELERI = {
+    "Altindag",
+    "Ayas",
+    "Bala",
+    "Beypazari",
+    "Camlidere",
+    "Cankaya",
+    "Cubuk",
+    "Elmadag",
+    "Etimesgut",
+    "Evren",
+    "Gölbasi",
+    "Gudul",
+    "Haymana",
+    "Kahramankazan",
+    "Kecioren",
+    "Kizilcahamam",
+    "Mamak",
+    "Nallihan",
+    "Polatli",
+    "Pursaklar",
+    "Sincan",
+    "Sereflikochisar",
+    "Yenimahalle"
 }
 
 
@@ -864,7 +850,7 @@ def ilce_bul(metin):
 
     bulunan = []
 
-    for ilce in ISTANBUL_ILCELERI:
+    for ilce in SEHIR_ILCELERI:
 
         pattern = rf"\b{re.escape(ilce)}\b"
 
@@ -964,13 +950,17 @@ def adres_bolumu_bul(body):
 
     if not aday:
 
+        sehir = temizle(
+            SEHIR
+        )
+
         adres_patternleri = [
 
-            r".{0,150}mah\.?.{0,150}istanbul",
-            r".{0,150}mahallesi.{0,150}istanbul",
-            r".{0,150}cad\.?.{0,150}istanbul",
-            r".{0,150}sok\.?.{0,150}istanbul",
-            r".{0,150}\b\d{5}\b.{0,150}istanbul"
+            rf".{{0,150}}mah\.?.{{0,150}}{re.escape(sehir)}",
+            rf".{{0,150}}mahallesi.{{0,150}}{re.escape(sehir)}",
+            rf".{{0,150}}cad\.?.{{0,150}}{re.escape(sehir)}",
+            rf".{{0,150}}sok\.?.{{0,150}}{re.escape(sehir)}",
+            rf".{{0,150}}\b\d{{5}}\b.{{0,150}}{re.escape(sehir)}"
 
         ]
 
@@ -1006,12 +996,19 @@ def adresten_ilce_bul(adres):
         adres
     )
 
-    # İlçe listesinden kontrol
+    # -------------------------------------------------
+    # İLÇE KONTROLÜ
+    # -------------------------------------------------
+
     bulunan = []
 
-    for ilce in ISTANBUL_ILCELERI:
+    for ilce in SEHIR_ILCELERI:
 
-        pattern = rf"\b{re.escape(ilce)}\b"
+        ilce_temiz = temizle(
+            ilce
+        )
+
+        pattern = rf"\b{re.escape(ilce_temiz)}\b"
 
         if re.search(
             pattern,
@@ -1028,13 +1025,20 @@ def adresten_ilce_bul(adres):
         return bulunan[0]
 
 
-    # İstanbul kelimesi
+    # -------------------------------------------------
+    # ŞEHİR KONTROLÜ
+    # -------------------------------------------------
+
+    sehir_temiz = temizle(
+        SEHIR
+    )
+
     if re.search(
-        r"\bistanbul\b",
+        rf"\b{re.escape(temizle(SEHIR))}\b",
         adres
     ):
 
-        return "istanbul"
+        return sehir_temiz
 
 
     return ""
