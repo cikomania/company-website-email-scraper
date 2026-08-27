@@ -4,6 +4,7 @@
 SEHIR = "Ankara"
 
 SEHIR_ILCELERI = {
+    "Akyurt",
     "Altindag",
     "Ayas",
     "Bala",
@@ -18,6 +19,7 @@ SEHIR_ILCELERI = {
     "Gudul",
     "Haymana",
     "Kahramankazan",
+    "Kalecik",
     "Kecioren",
     "Kizilcahamam",
     "Mamak",
@@ -71,4 +73,39 @@ SEHIR_ILCELERI = {
     "Umraniye",
     "Uskudar",
     "Zeytinburnu"
+}
+
+SEHIR = "İzmir"
+
+SEHIR_ILCELERI = {
+    "Aliaga",
+    "Balçova",
+    "Bayindir",
+    "Bayrakli",
+    "Bergama",
+    "Beydag",
+    "Bornova",
+    "Buca",
+    "Cesme",
+    "Cigli",
+    "Dikili",
+    "Foca",
+    "Gaziemir",
+    "Guzelbahce",
+    "Karabaglar",
+    "Karaburun",
+    "Karsiyaka",
+    "Kemalpasa",
+    "Kinik",
+    "Kiraz",
+    "Konak",
+    "Menderes",
+    "Menemen",
+    "Narlıdere",
+    "Odemis",
+    "Seferihisar",
+    "Selcuk",
+    "Tire",
+    "Torbalı",
+    "Urla"
 }
