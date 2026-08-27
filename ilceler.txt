@@ -1,0 +1,74 @@
+# Kullanılacak şehri aşağıdaki SEHIR satırından seçin.
+# Aynı anda yalnızca bir şehir aktif olmalıdır.
+
+SEHIR = "Ankara"
+
+SEHIR_ILCELERI = {
+    "Altindag",
+    "Ayas",
+    "Bala",
+    "Beypazari",
+    "Camlidere",
+    "Cankaya",
+    "Cubuk",
+    "Elmadag",
+    "Etimesgut",
+    "Evren",
+    "Gölbasi",
+    "Gudul",
+    "Haymana",
+    "Kahramankazan",
+    "Kecioren",
+    "Kizilcahamam",
+    "Mamak",
+    "Nallihan",
+    "Polatli",
+    "Pursaklar",
+    "Sincan",
+    "Sereflikochisar",
+    "Yenimahalle"
+}
+
+SEHIR = "İstanbul"
+
+SEHIR_ILCELERI = {
+    "Adalar",
+    "Arnavutkoy",
+    "Atasehir",
+    "Avcilar",
+    "Bagcilar",
+    "Bahcelievler",
+    "Bakirkoy",
+    "Basaksehir",
+    "Bayrampasa",
+    "Besiktas",
+    "Beykoz",
+    "Beylikduzu",
+    "Beyoglu",
+    "Buyukcekmece",
+    "Catalca",
+    "Cekmekoy",
+    "Esenler",
+    "Esenyurt",
+    "Eyupsultan",
+    "Fatih",
+    "Gaziosmanpasa",
+    "Gungoren",
+    "Kadikoy",
+    "Kagithane",
+    "Kartal",
+    "Kucukcekmece",
+    "Maltepe",
+    "Pendik",
+    "Sancaktepe",
+    "Sariyer",
+    "Silivri",
+    "Sultanbeyli",
+    "Sultangazi",
+    "Sisli",
+    "Sile",
+    "Tuzla",
+    "Umraniye",
+    "Uskudar",
+    "Zeytinburnu"
+}
