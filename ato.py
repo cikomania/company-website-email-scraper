@@ -8,19 +8,40 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
+from openpyxl import load_workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+
+
+# ============================================================
+# MESLEK GRUP NO
+# ============================================================
+
+KOMITE_NO = input("Ankara için meslek grup no girin: ").strip()
+
+if not KOMITE_NO.isdigit():
+    print("HATA: Meslek grup no sadece sayı olmalıdır.")
+    exit()
+
+KOMITE_NO = int(KOMITE_NO)
+
 
 # ============================================================
 # AYARLAR
 # ============================================================
 
-# Buradan aradığın meslek grubu için linki 
-# ve oluşturulacak excel dosya adını değiştir cano
-
 SEHIR = "Ankara"
 
-URL = "https://www.atonet.org.tr/KomiteListe?komiteKodu=25"
+URL = (
+    f"https://www.atonet.org.tr/"
+    f"KomiteListe?komiteKodu={KOMITE_NO}"
+)
 
-OUTPUT = "ato_25.xlsx"
+KOMITE_URL = (
+    f"https://www.atonet.org.tr/"
+    f"Komite/{KOMITE_NO}"
+)
+
+OUTPUT = f"ato_{KOMITE_NO}.xlsx"
 
 
 # ============================================================
@@ -137,7 +158,7 @@ def ilce_bul(adres):
 
 print()
 print("=" * 70)
-print(f"ATO {SEHIR.upper()} KOMİTE LİSTESİ")
+print(f"ATO {SEHIR.upper()} - MESLEK GRUBU {KOMITE_NO}")
 print("=" * 70)
 
 print()
@@ -160,10 +181,57 @@ driver = webdriver.Chrome(
 
 
 # ============================================================
-# SAYFAYI AÇ
+# KOMİTE TANIMINI AL
 # ============================================================
 
-print("ATO sayfası açılıyor...")
+print()
+print("Meslek grup bilgisi alınıyor...")
+
+driver.get(KOMITE_URL)
+
+time.sleep(2)
+
+
+try:
+
+    komite_baslik = driver.find_element(
+        By.CSS_SELECTOR,
+        "h5.sayfa-baslik"
+    ).text.strip()
+
+
+    # --------------------------------------------------------
+    # "MESLEK KOMİTESİ" İFADESİNİ TEMİZLE
+    # --------------------------------------------------------
+
+    MESLEK_GRUP_TANIM = re.sub(
+        r"\s+MESLEK KOMİTESİ$",
+        "",
+        komite_baslik,
+        flags=re.IGNORECASE
+    ).strip()
+
+
+    print(
+        f"Meslek Grup Tanım: {MESLEK_GRUP_TANIM}"
+    )
+
+
+except Exception as e:
+
+    print()
+    print("UYARI: Meslek grup tanımı alınamadı.")
+    print(f"Hata: {e}")
+
+    MESLEK_GRUP_TANIM = "yok"
+
+
+# ============================================================
+# FİRMA LİSTESİ SAYFASINI AÇ
+# ============================================================
+
+print()
+print("ATO firma listesi açılıyor...")
 
 driver.get(URL)
 
@@ -225,7 +293,6 @@ while True:
 
 
         if len(cells) < 5:
-
             continue
 
 
@@ -243,7 +310,6 @@ while True:
         # ----------------------------------------------------
 
         if not sicil or not unvan:
-
             continue
 
 
@@ -252,7 +318,6 @@ while True:
         # ----------------------------------------------------
 
         if not telefon:
-
             telefon = "yok"
 
 
@@ -283,8 +348,20 @@ while True:
             "İlçe":
                 ilce,
 
+            "Web":
+                "",
+
+            "Mail":
+                "",
+
             "Firma Tel":
-                telefon
+                telefon,
+
+            "Meslek Grup No":
+                KOMITE_NO,
+
+            "Meslek Grup Tanım":
+                MESLEK_GRUP_TANIM
 
         })
 
@@ -293,10 +370,21 @@ while True:
     # SONRAKİ BUTONU BUL
     # ========================================================
 
-    next_button = driver.find_element(
-        By.CSS_SELECTOR,
-        "#TBL_KOMITE_next"
-    )
+    try:
+
+        next_button = driver.find_element(
+            By.CSS_SELECTOR,
+            "#TBL_KOMITE_next"
+        )
+
+    except Exception:
+
+        print()
+        print(
+            "  Sonraki sayfa butonu bulunamadı."
+        )
+
+        break
 
 
     # --------------------------------------------------------
@@ -328,12 +416,17 @@ while True:
 
     try:
 
-        eski_ilk_sicil = rows[0].find_elements(
-            By.TAG_NAME,
-            "td"
-        )[1].text.strip()
+        eski_ilk_sicil = (
+            rows[0]
+            .find_elements(
+                By.TAG_NAME,
+                "td"
+            )[1]
+            .text
+            .strip()
+        )
 
-    except:
+    except Exception:
 
         pass
 
@@ -367,7 +460,6 @@ while True:
 
 
         if not yeni_rows:
-
             continue
 
 
@@ -383,7 +475,7 @@ while True:
                 .strip()
             )
 
-        except:
+        except Exception:
 
             continue
 
@@ -420,12 +512,14 @@ df = pd.DataFrame(
 # AYNI FİRMALARI TEMİZLE
 # ============================================================
 
-df = df.drop_duplicates(
-    subset=[
-        "Ticaret Sicil No"
-    ],
-    keep="first"
-)
+if not df.empty:
+
+    df = df.drop_duplicates(
+        subset=[
+            "Ticaret Sicil No"
+        ],
+        keep="first"
+    )
 
 
 # ============================================================
@@ -439,46 +533,170 @@ df.to_excel(
 
 
 # ============================================================
+# EXCEL BİÇİMLENDİRME
+# ============================================================
+
+print()
+print("Excel biçimlendiriliyor...")
+
+
+wb = load_workbook(
+    OUTPUT
+)
+
+ws = wb.active
+
+
+# ------------------------------------------------------------
+# TÜM HÜCRELER
+# Arial - 11 punto
+# ------------------------------------------------------------
+
+for row in ws.iter_rows():
+
+    for cell in row:
+
+        cell.font = Font(
+            name="Arial",
+            size=11
+        )
+
+        cell.alignment = Alignment(
+            vertical="center"
+        )
+
+
+# ------------------------------------------------------------
+# BAŞLIK SATIRI
+# Beyaz + Bold
+# Dolgu: #46bdc6
+# ------------------------------------------------------------
+
+header_fill = PatternFill(
+    fill_type="solid",
+    fgColor="46BDC6"
+)
+
+
+for cell in ws[1]:
+
+    cell.font = Font(
+        name="Arial",
+        size=11,
+        bold=True,
+        color="FFFFFF"
+    )
+
+    cell.fill = header_fill
+
+    cell.alignment = Alignment(
+        horizontal="center",
+        vertical="center"
+    )
+
+
+# ------------------------------------------------------------
+# SÜTUN GENİŞLİKLERİ
+# ------------------------------------------------------------
+
+for column in ws.columns:
+
+    max_length = 0
+
+    column_letter = column[0].column_letter
+
+
+    for cell in column:
+
+        if cell.value is not None:
+
+            cell_length = len(
+                str(cell.value)
+            )
+
+            if cell_length > max_length:
+
+                max_length = cell_length
+
+
+    # Çok uzun sütunların aşırı genişlemesini önle
+    adjusted_width = min(
+        max_length + 2,
+        60
+    )
+
+
+    ws.column_dimensions[
+        column_letter
+    ].width = adjusted_width
+
+
+# ------------------------------------------------------------
+# BAŞLIK SATIRI YÜKSEKLİĞİ
+# ------------------------------------------------------------
+
+ws.row_dimensions[1].height = 22
+
+
+# ============================================================
+# EXCEL KAYDET
+# ============================================================
+
+wb.save(
+    OUTPUT
+)
+
+
+# ============================================================
 # İSTATİSTİK
 # ============================================================
 
 toplam = len(df)
 
 
-ilce_bulunan = (
-    df["İlçe"]
-    .fillna("")
-    .astype(str)
-    .str.strip()
-    .ne("")
-    .sum()
-)
+if toplam > 0:
+
+    ilce_bulunan = (
+        df["İlçe"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .ne("")
+        .sum()
+    )
 
 
-ilce_bulunamayan = (
-    toplam
-    - ilce_bulunan
-)
+    ilce_bulunamayan = (
+        toplam
+        - ilce_bulunan
+    )
 
 
-telefon_var = (
-    df["Firma Tel"]
-    .fillna("")
-    .astype(str)
-    .str.strip()
-    .ne("yok")
-    .sum()
-)
+    telefon_var = (
+        df["Firma Tel"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .ne("yok")
+        .sum()
+    )
 
 
-telefon_yok = (
-    df["Firma Tel"]
-    .fillna("")
-    .astype(str)
-    .str.strip()
-    .eq("yok")
-    .sum()
-)
+    telefon_yok = (
+        df["Firma Tel"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .eq("yok")
+        .sum()
+    )
+
+else:
+
+    ilce_bulunan = 0
+    ilce_bulunamayan = 0
+    telefon_var = 0
+    telefon_yok = 0
 
 
 # ============================================================
@@ -489,6 +707,14 @@ print()
 print("=" * 70)
 print("TAMAMLANDI")
 print("=" * 70)
+
+print(
+    f"Meslek Grup No    : {KOMITE_NO}"
+)
+
+print(
+    f"Meslek Grup Tanım : {MESLEK_GRUP_TANIM}"
+)
 
 print(
     f"Toplam firma      : {toplam}"
