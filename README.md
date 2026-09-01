@@ -4,7 +4,7 @@ An automated Python tool for finding and verifying company websites and extracti
 
 The tool uses Google Search to find potential company websites, evaluates candidates based on company-name similarity, verifies websites with Selenium, checks address/district information, extracts email addresses, and exports the results to Excel.  
 
-The scraper can be used for different cities by configuring the city and district information through `ilceler.txt`.
+The scraper can be used for different cities. The city and district data is stored separately in a JSON configuration file, and the city to process is selected when the program starts.
 
 ## Tech Stack
 
@@ -34,11 +34,13 @@ Example:
 
 ## City & District Configuration
 
-The scraper is designed to work with different cities.
+The scraper supports multiple cities.
 
-City and district information is maintained separately in `ilceler.txt`, making it easier to switch between cities or update district lists without searching through the main Python script.  
+City and district information is maintained separately in `ilceler.json`.    
 
-For another city, replace the city name and district list in the configuration.
+When the program starts, select the city by entering its name. The corresponding district list is loaded automatically from `ilceler.json`. 
+
+To add or update cities and districts, edit `ilceler.json`. There is no need to modify the main Python script.
 
 ## Output
 
@@ -55,7 +57,7 @@ firmalar/
 ├── venv/
 ├── firmalar.xlsx
 ├── firmalar_web_mail.xlsx
-├── ilceler.txt
+├── ilceler.json
 └── sitemailbul.py
 ```
 
@@ -143,6 +145,6 @@ Navigate to the project directory first.
      python sitemailbul.py
      ```
 
-The project path may be different depending on where the repository is located.
+The project path may be different depending on where the repository is located.  
 
 > `firmalar.xlsx`, `firmalar_web_mail.xlsx`, and `venv/` contain local data or environment files and should not be committed to the public repository.
