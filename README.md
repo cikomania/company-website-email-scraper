@@ -1,12 +1,12 @@
-# Company Website & Email Scraper
+# Şirket Web Sitesi ve E-posta Bulucu
 
-An automated Python tool for finding and verifying company websites and extracting email addresses from an Excel file containing company names, addresses, and districts.
+Bu program Excel dosyasındaki firma bilgilerini kullanarak şirketlerin web sitelerini ve e-posta adreslerini bulup doğrulayan Python tabanlı bir araçtır.
 
-The tool uses Google Search to find potential company websites, evaluates candidates based on company-name similarity, verifies websites with Selenium, checks address/district information, extracts email addresses, and exports the results to Excel.  
+Google Search üzerinden web sitesi adaylarını bulur, firma adı ve adres bilgilerine göre değerlendirir, Selenium ile siteleri kontrol eder ve bulduğu web sitesi ile e-posta bilgilerini Excel dosyasına kaydeder.  
 
-The scraper can be used for different cities. The city and district data is stored separately in a JSON configuration file, and the city to process is selected when the program starts.
+Farklı şehirlerde kullanılabilir. Şehir ve ilçe listeleri `ilceler.json` dosyasında tutulur ve program başlatıldığında yalnızca işlem yapılacak şehrin seçilmesi yeterlidir.
 
-## Tech Stack
+## Kullanılan Teknolojiler
 
 - Python 3
 - Selenium
@@ -15,42 +15,46 @@ The scraper can be used for different cities. The city and district data is stor
 - WebDriver Manager
 - Google Search
 - Web Scraping
-- Data Extraction
-- Automation
+- Veri Çıkarma
+- Otomasyon
 
-## Input
+## Girdi
 
-The program expects an Excel file named `firmalar.xlsx`.
+Programın çalışması için proje klasöründe `firmalar.xlsx` adlı Excel dosyasının bulunması gerekir.
 
-The input file should contain at least these columns:
+Dosyada şu üç sütun yer almalıdır:
 
 `UNVAN`, `ADRES`, `ILCE`
 
-Example:
+Sütun isimlerinde yazım hatası, eksik karakter veya farklı adlandırma bulunmamalıdır.  
+
+Örnek:
 
 | UNVAN | ADRES | ILCE |
 |---|---|---|
-| Example Company Ltd. | Example Address | Sisli |
+| Örnek Ltd. Şti. | Örnek Mah. Örnek Sok. | Şişli |
 
-## City & District Configuration
+## Şehir ve İlçe Ayarları
 
-The scraper supports multiple cities.
+Şehir ve ilçe bilgileri `ilceler.json` dosyasından okunur.  
 
-City and district information is maintained separately in `ilceler.json`.    
+Program çalıştırıldığında mevcut şehirler arasından işlem yapılacak şehir seçilir. Seçilen şehre ait ilçeler otomatik olarak yüklenir.
 
-When the program starts, select the city by entering its name. The corresponding district list is loaded automatically from `ilceler.json`. 
+Başka şehirlerde çalışabilmek için yalnızca `ilceler.json` dosyasını güncellemeniz yeterlidir. Python dosyasında değişiklik yapmanız gerekmez.
 
-To add or update cities and districts, edit `ilceler.json`. There is no need to modify the main Python script.
+## Çıktı
 
-## Output
+Program, sonuçları `firmalar_web_mail.xlsx` dosyasına kaydeder.  
 
-The program creates `firmalar_web_mail.xlsx`.
+Çıktı dosyasında aşağıdaki sütunlar bulunur:
 
-The output contains:
+`UNVAN`, `KAYNAK_ADRES`, `KAYNAK_ILCE`, `WEB`, `MAIL`, `WEB_ILCE`, `ADRES_DURUMU`, `DURUM`, `SITE_PUANI`. 
 
-`UNVAN`, `KAYNAK_ADRES`, `KAYNAK_ILCE`, `WEB`, `MAIL`, `WEB_ILCE`, `ADRES_DURUMU`, `DURUM`, `SITE_PUANI`
+Excel dosyasında bazı satırlar **turuncu renkle** işaretlenir. Bu satırlar, web sitesi bulunmuş olsa da ilçe veya adres bilgilerinde farklılık bulunduğu ya da adres bilgilerinin eksik olduğu durumları gösterir ve **manuel olarak tekrar kontrol edilmelidir**.
 
-## Project Structure
+**Beyaz renkteki satırlar**, otomatik doğrulama kriterlerini karşılayan ve firma ile web sitesi arasında güçlü eşleşme bulunan sonuçlardır.
+
+## Proje Yapısı
 
 ```text
 firmalar/
@@ -61,19 +65,16 @@ firmalar/
 └── sitemailbul.py
 ```
 
-## Installation
+## Kurulum
 
-Make sure Python 3 is installed.
+Proje Python 3.14.3 ile geliştirilmiştir.  
 
-Python 3.14.3 is currently used during development.
+Projeyi indirdikten veya klonladıktan sonra proje klasörüne geçin ve sanal ortam oluşturun:
 
-Clone or download this repository and navigate to the project directory.
-
-Create a virtual environment:
-
-- ### macOS
+- ### macOS Terminal
 
      ```bash
+     cd ~/Desktop/firmalar
      python3 -m venv venv
      source venv/bin/activate
      ```
@@ -81,11 +82,12 @@ Create a virtual environment:
 - ### Windows PowerShell
 
      ```bash
+     cd C:\firmalar
      python -m venv venv
      venv\Scripts\Activate
      ```
 
-Install the required packages:
+Gerekli paketleri yükleyin:
 
 - ### macOS
 
@@ -99,35 +101,35 @@ Install the required packages:
      python -m pip install pandas openpyxl selenium webdriver-manager
      ```
 
-## Chrome Remote Debugging
+## Chrome Uzaktan Hata Ayıklama
 
-The scraper connects to an existing Chrome session using Selenium remote debugging.
-
-Chrome must be started with remote debugging enabled.
+Program, Selenium ile açık bir Chrome oturumuna bağlanarak çalışır. Bu nedenle Chrome'u uzaktan hata ayıklama özelliği etkin olacak şekilde başlatmanız gerekir.
 
 - ### macOS
 
-  Open Terminal and run:
+  Terminal'i açın ve aşağıdaki komutu çalıştırın:
 
      ```bash
      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --remote-debugging-port=9222 --user-data-dir="$HOME/chrome_selenium"
      ```
 
-  Keep this Chrome window open while the scraper is running.
+  Program çalışırken açılan Chrome penceresini kapatmayın.
 
 - ### Windows
 
-  Open PowerShell and run:
+  PowerShell'i açın ve aşağıdaki komutu çalıştırın:
 
      ```bash
      & "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="$env:USERPROFILE\chrome_selenium"
      ```
 
-If Chrome is installed in a different location, update the path accordingly.
+Chrome farklı bir klasöre kurulmuşsa komuttaki dosya yolunu kendi sisteminize göre güncelleyin.
 
-## Running the Program
+## Programı Çalıştırma
 
-Navigate to the project directory first.
+Öncelikle proje klasörüne geçin ve sanal ortamı etkinleştirin.  
+
+macOS'ta Chrome Uzaktan Hata Ayıklama ve program için ayrı Terminal pencereleri kullanılmalıdır. Windows'ta ise Chrome ve program aynı PowerShell penceresinden çalıştırılabilir.  
 
 - ### macOS
 
@@ -138,13 +140,13 @@ Navigate to the project directory first.
      ```
   
 - ### Windows
-
+  
     ```bash
      cd C:\firmalar
      venv\Scripts\Activate
      python sitemailbul.py
      ```
+    
+Proje klasörünün yolu bilgisayarınızdaki konuma göre değişebilir. 
 
-The project path may be different depending on where the repository is located.  
-
-> `firmalar.xlsx`, `firmalar_web_mail.xlsx`, and `venv/` contain local data or environment files and should not be committed to the public repository.
+> `firmalar.xlsx`, `firmalar_web_mail.xlsx` ve `venv/` yerel veri veya sanal ortam dosyaları içerdiği için public repository'ye eklenmemelidir.
