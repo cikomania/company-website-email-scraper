@@ -233,38 +233,79 @@ print(df.columns.tolist())
 
 print("\nToplam firma:", len(df))
 
+# =====================================================
+# ŞEHİR / İLÇE LİSTESİNİ YÜKLE
+# =====================================================
+
+import json
+
+with open("ilceler.json", "r", encoding="utf-8") as f:
+    SEHIRLER = json.load(f)
+
 
 # =====================================================
-# ŞEHİR / İLÇE AYARLARI
+# ŞEHİR SEÇ
 # =====================================================
 
-SEHIR = "Ankara"
+def sehir_sec():
 
-SEHIR_ILCELERI = {
-    "Altindag",
-    "Ayas",
-    "Bala",
-    "Beypazari",
-    "Camlidere",
-    "Cankaya",
-    "Cubuk",
-    "Elmadag",
-    "Etimesgut",
-    "Evren",
-    "Gölbasi",
-    "Gudul",
-    "Haymana",
-    "Kahramankazan",
-    "Kecioren",
-    "Kizilcahamam",
-    "Mamak",
-    "Nallihan",
-    "Polatli",
-    "Pursaklar",
-    "Sincan",
-    "Sereflikochisar",
-    "Yenimahalle"
-}
+    print("\n" + "=" * 50)
+    print("ŞEHİR SEÇİMİ")
+    print("=" * 50)
+
+    print("Mevcut şehirler:")
+    print(", ".join(sorted(SEHIRLER.keys())))
+
+    print("=" * 50)
+
+    while True:
+
+        secim = input(
+            "Şehir adını girin: "
+        ).strip()
+
+        # Büyük/küçük harf duyarlılığını kaldır
+        bulunan_sehir = None
+
+        for sehir in SEHIRLER:
+
+            if sehir.casefold() == secim.casefold():
+
+                bulunan_sehir = sehir
+                break
+
+        if bulunan_sehir:
+
+            return bulunan_sehir
+
+        print(
+            "\n⚠ Şehir bulunamadı."
+        )
+
+        print(
+            "Lütfen JSON dosyasındaki "
+            "şehirlerden birini girin.\n"
+        )
+
+
+# =====================================================
+# AKTİF ŞEHİR
+# =====================================================
+
+SEHIR = sehir_sec()
+
+SEHIR_ILCELERI = set(
+    SEHIRLER[SEHIR]
+)
+
+
+print("\n" + "=" * 50)
+print("SEÇİM TAMAMLANDI")
+print("=" * 50)
+
+print(f"Şehir : {SEHIR}")
+print(f"İlçe  : {len(SEHIR_ILCELERI)} adet")
+print("=" * 50)
 
 
 # =====================================================
