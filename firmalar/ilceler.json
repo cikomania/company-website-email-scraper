@@ -100,5 +100,59 @@
         "Tire",
         "Torbali",
         "Urla"
+    ],
+
+        "Bursa": [
+        "Buyukorhan",
+        "Gemlik",
+        "Gursu",
+        "Harmancik",
+        "Inegol",
+        "Iznik",
+        "Karacabey",
+        "Keles",
+        "Kestel",
+        "Mudanya",
+        "Mustafakemalpasa",
+        "Nilufer",
+        "Orhaneli",
+        "Orhangazi",
+        "Osmangazi",
+        "Yenisehir",
+        "Yildirim"
+    ],
+
+    "Sakarya": [
+        "Adapazari",
+        "Akyazi",
+        "Arifiye",
+        "Erenler",
+        "Ferizli",
+        "Geyve",
+        "Hendek",
+        "Karapurcek",
+        "Karasu",
+        "Kaynarca",
+        "Kocaali",
+        "Pamukova",
+        "Sapanca",
+        "Serdivan",
+        "Sogutlu",
+        "Tarakli"
+    ],
+
+    "Tekirdag": [
+        "Suleymanpasa",
+        "Merkez",
+        "Corlu",
+        "Cerkezkoy",
+        "Kapakli",
+        "Ergene",
+        "Malkara",
+        "Saray",
+        "Hayrabolu",
+        "Sarkoy",
+        "Marmaraereglisi",
+        "Muratli"
     ]
 }
