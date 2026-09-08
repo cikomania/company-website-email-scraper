@@ -26,7 +26,6 @@
         "Sereflikochisar",
         "Yenimahalle"
     ],
-
     "Istanbul": [
         "Adalar",
         "Arnavutkoy",
@@ -68,7 +67,6 @@
         "Uskudar",
         "Zeytinburnu"
     ],
-
     "Izmir": [
         "Aliaga",
         "Balcova",
@@ -101,8 +99,7 @@
         "Torbali",
         "Urla"
     ],
-
-        "Bursa": [
+    "Bursa": [
         "Buyukorhan",
         "Gemlik",
         "Gursu",
@@ -121,7 +118,6 @@
         "Yenisehir",
         "Yildirim"
     ],
-
     "Sakarya": [
         "Adapazari",
         "Akyazi",
@@ -140,7 +136,6 @@
         "Sogutlu",
         "Tarakli"
     ],
-
     "Tekirdag": [
         "Suleymanpasa",
         "Merkez",
