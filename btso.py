@@ -18,13 +18,9 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import (
-    TimeoutException,
-    StaleElementReferenceException,
-    WebDriverException,
-)
-
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.support.ui import WebDriverWait
+
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -43,27 +39,27 @@ DETAIL_URL = (
     "kayitli-uyeler-detay"
 )
 
-# Normal durumda firma POST'ları arasındaki kısa bekleme
+# Firma detay istekleri arasındaki bekleme
 DETAIL_WAIT_MIN = 0.5
 DETAIL_WAIT_MAX = 0.9
 
-# Sayfa değişiminden sonra
+# Sayfa değişiminden sonra bekleme
 PAGE_WAIT_MIN = 1.0
 PAGE_WAIT_MAX = 1.8
 
-# Rate-limit olursa ilk bekleme
+# Rate-limit ilk bekleme
 RATE_LIMIT_INITIAL_WAIT = 8
 
 # Rate-limit maksimum bekleme
 RATE_LIMIT_MAX_WAIT = 60
 
-# Aynı firma isteğini kaç kez deneyeceğiz?
+# Aynı firma için maksimum deneme
 MAX_DETAIL_RETRY = 5
 
-# Aynı sayfaya kaç kez tekrar girmeyi deneyelim?
+# Aynı sayfaya geçiş için maksimum deneme
 MAX_PAGE_RETRY = 5
 
-# Detay POST timeout
+# Detail POST timeout
 DETAIL_TIMEOUT = 30
 
 # Sayfa yükleme timeout
@@ -96,6 +92,20 @@ BURSA_ILCELERI = [
 
 
 # =============================================================================
+# EXCEL SÜTUNLARI
+# =============================================================================
+
+COLUMNS = [
+    "Unvan",
+    "Adres",
+    "İlçe",
+    "Web",
+    "Meslek Grubu No",
+    "Meslek Grubu",
+]
+
+
+# =============================================================================
 # GENEL YARDIMCI FONKSİYONLAR
 # =============================================================================
 
@@ -119,9 +129,8 @@ def turkce_upper(text):
     """
     Türkçe karakterleri bozmadan büyük harfe çevirir.
 
-    Nilüfer  -> NİLÜFER
-    nilüfer  -> NİLÜFER
-    NİLÜFER  -> NİLÜFER
+    Nilüfer -> NİLÜFER
+    nilüfer -> NİLÜFER
     """
 
     if not text:
@@ -148,14 +157,13 @@ def turkce_upper(text):
 
 def ilce_bul(adres):
     """
-    Sadece "... İLÇE/BURSA" yapısını dikkate alır.
+    Adres içerisindeki:
 
-    Örnek:
-    NİLÜFER/BURSA
-    Nilüfer/Bursa
-    nilüfer / BURSA
+        İLÇE/BURSA
+        İlçe / Bursa
+        ilçe/BURSA
 
-    hepsi -> NİLÜFER
+    yapısını bulur.
     """
 
     if not adres:
@@ -183,16 +191,19 @@ def ilce_bul(adres):
 
 
 # =============================================================================
-# MESLEK GRUBU
+# MESLEK GRUBU AYRIŞTIR
 # =============================================================================
 
 def meslek_grubu_ayristir(meslek):
     """
-    04. GRUP : MADENLER VE...
+    Örnek:
 
-    ->
-    04. GRUP
-    MADENLER VE...
+        04. GRUP : MADENLER VE...
+
+    sonuç:
+
+        04. GRUP
+        MADENLER VE...
     """
 
     if not meslek:
@@ -227,6 +238,7 @@ def meslek_grubu_ayristir(meslek):
 # =============================================================================
 
 def parse_detail_html(html, liste_unvani=""):
+
     soup = BeautifulSoup(
         html,
         "html.parser"
@@ -238,7 +250,7 @@ def parse_detail_html(html, liste_unvani=""):
     meslek = ""
 
     # -------------------------------------------------------------------------
-    # Unvan
+    # UNVAN
     # -------------------------------------------------------------------------
 
     h3 = soup.find("h3")
@@ -253,12 +265,13 @@ def parse_detail_html(html, liste_unvani=""):
         )
 
     if not unvan:
+
         unvan = temiz_metin(
             liste_unvani
         )
 
     # -------------------------------------------------------------------------
-    # Satırlar
+    # TABLO SATIRLARI
     # -------------------------------------------------------------------------
 
     for row in soup.find_all("tr"):
@@ -288,14 +301,14 @@ def parse_detail_html(html, liste_unvani=""):
             deger
         )
 
-        alan_norm = turkce_upper(
-            alan
-        )
+        alan_norm = turkce_upper(alan)
 
+        # ADRES
         if alan_norm == "ADRES":
 
             adres = deger
 
+        # WEB
         elif alan_norm == "WEB":
 
             a = cells[1].find("a")
@@ -311,16 +324,16 @@ def parse_detail_html(html, liste_unvani=""):
                     "http://",
                     "https://"
                 ):
+
                     web = href
 
+        # MESLEK GRUBU
         elif alan_norm == "MESLEK GRUBU":
 
             meslek = deger
 
-    grup_no, grup_adi = (
-        meslek_grubu_ayristir(
-            meslek
-        )
+    grup_no, grup_adi = meslek_grubu_ayristir(
+        meslek
     )
 
     return {
@@ -353,6 +366,7 @@ def chrome_baslat():
         "--disable-popup-blocking"
     )
 
+    # Chrome açık kalsın
     options.add_experimental_option(
         "detach",
         True
@@ -362,10 +376,12 @@ def chrome_baslat():
         ChromeDriverManager().install()
     )
 
-    return webdriver.Chrome(
+    driver = webdriver.Chrome(
         service=service,
         options=options
     )
+
+    return driver
 
 
 # =============================================================================
@@ -377,6 +393,7 @@ def session_olustur(driver):
     session = requests.Session()
 
     session.headers.update({
+
         "User-Agent": driver.execute_script(
             "return navigator.userAgent;"
         ),
@@ -394,10 +411,11 @@ def session_olustur(driver):
         "X-Requested-With": "XMLHttpRequest",
     })
 
-    # Selenium'daki cookie'leri requests.Session'a aktar
+    # Selenium cookie'lerini requests'e aktar
     for cookie in driver.get_cookies():
 
         try:
+
             session.cookies.set(
                 cookie["name"],
                 cookie["value"],
@@ -418,6 +436,7 @@ def session_cookie_guncelle(session, driver):
         for cookie in driver.get_cookies():
 
             try:
+
                 session.cookies.set(
                     cookie["name"],
                     cookie["value"],
@@ -461,7 +480,7 @@ def csrf_token_al(driver):
 
 
 # =============================================================================
-# MESLEK GRUBUNU BUL
+# MESLEK GRUBU BİLGİSİ
 # =============================================================================
 
 def grup_bilgisi_al(driver):
@@ -469,7 +488,10 @@ def grup_bilgisi_al(driver):
     grup_no = ""
     grup_adi = ""
 
-    # Önce select
+    # -------------------------------------------------------------------------
+    # Önce SELECT
+    # -------------------------------------------------------------------------
+
     try:
 
         selected = driver.find_element(
@@ -481,16 +503,17 @@ def grup_bilgisi_al(driver):
             selected.text
         )
 
-        grup_no, grup_adi = (
-            meslek_grubu_ayristir(
-                secili
-            )
+        grup_no, grup_adi = meslek_grubu_ayristir(
+            secili
         )
 
     except Exception:
         pass
 
-    # URL fallback
+    # -------------------------------------------------------------------------
+    # URL FALLBACK
+    # -------------------------------------------------------------------------
+
     if not grup_no:
 
         try:
@@ -504,10 +527,8 @@ def grup_bilgisi_al(driver):
 
             if match:
 
-                grup_no, grup_adi = (
-                    meslek_grubu_ayristir(
-                        match.group(1)
-                    )
+                grup_no, grup_adi = meslek_grubu_ayristir(
+                    match.group(1)
                 )
 
         except Exception:
@@ -534,16 +555,12 @@ def firma_listesini_oku(driver):
         try:
 
             firma_id = (
-                element.get_attribute(
-                    "data-id"
-                )
+                element.get_attribute("data-id")
                 or ""
             ).strip()
 
             token = (
-                element.get_attribute(
-                    "data-token"
-                )
+                element.get_attribute("data-token")
                 or ""
             ).strip()
 
@@ -570,7 +587,7 @@ def firma_listesini_oku(driver):
 
 
 # =============================================================================
-# RATE LIMIT KONTROLÜ
+# RATE LIMIT
 # =============================================================================
 
 def rate_limit_var_mi(response):
@@ -599,26 +616,26 @@ def rate_limit_var_mi(response):
     )
 
 
-def hata_sayfasi_mi(html):
+def hata_html_mi(html):
 
     text = turkce_upper(
         html
     )
 
-    return (
-        "İŞLEM BAŞARISIZ OLDU"
-        in text
-        or
-        "BEKLENMEYEN BİR HATA"
-        in text
-        or
-        "TOO MANY REQUESTS"
-        in text
+    ifadeler = [
+        "İŞLEM BAŞARISIZ OLDU",
+        "BEKLENMEYEN BİR HATA",
+        "TOO MANY REQUESTS",
+    ]
+
+    return any(
+        ifade in text
+        for ifade in ifadeler
     )
 
 
 # =============================================================================
-# FİRMA DETAIL POST
+# FİRMA DETAY POST
 # =============================================================================
 
 def firma_detayi_getir(
@@ -657,13 +674,11 @@ def firma_detayi_getir(
                 timeout=DETAIL_TIMEOUT,
             )
 
-            # ---------------------------------------------------------------
-            # Rate-limit
-            # ---------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # RATE LIMIT
+            # -----------------------------------------------------------------
 
-            if rate_limit_var_mi(
-                response
-            ):
+            if rate_limit_var_mi(response):
 
                 print(
                     f"        ! Rate-limit "
@@ -688,9 +703,9 @@ def firma_detayi_getir(
 
                 continue
 
-            # ---------------------------------------------------------------
-            # HTTP hata
-            # ---------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # HTTP HATA
+            # -----------------------------------------------------------------
 
             if response.status_code != 200:
 
@@ -699,20 +714,22 @@ def firma_detayi_getir(
                     f"{response.status_code}"
                 )
 
-                time.sleep(
-                    min(
-                        3 * deneme,
-                        15
+                if deneme < MAX_DETAIL_RETRY:
+
+                    time.sleep(
+                        min(
+                            3 * deneme,
+                            15
+                        )
                     )
-                )
 
                 continue
 
-            # ---------------------------------------------------------------
-            # BTSO hata HTML'i
-            # ---------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # BTSO HATA HTML
+            # -----------------------------------------------------------------
 
-            if hata_sayfasi_mi(
+            if hata_html_mi(
                 response.text
             ):
 
@@ -739,16 +756,14 @@ def firma_detayi_getir(
 
                 continue
 
-            # ---------------------------------------------------------------
-            # Parse
-            # ---------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # PARSE
+            # -----------------------------------------------------------------
 
-            detay = parse_detail_html(
+            return parse_detail_html(
                 response.text,
                 firma["unvan"]
             )
-
-            return detay
 
         except requests.RequestException as e:
 
@@ -765,7 +780,7 @@ def firma_detayi_getir(
                     )
                 )
 
-    # Başarısız olsa bile boş kayıt oluştur
+    # Başarısız olsa bile unvan kaybolmasın
     return {
         "Unvan": firma["unvan"],
         "Adres": "",
@@ -777,18 +792,8 @@ def firma_detayi_getir(
 
 
 # =============================================================================
-# EXCEL
+# EXCEL KAYDET
 # =============================================================================
-
-COLUMNS = [
-    "Unvan",
-    "Adres",
-    "İlçe",
-    "Web",
-    "Meslek Grubu No",
-    "Meslek Grubu",
-]
-
 
 def excel_kaydet(
     results,
@@ -802,15 +807,18 @@ def excel_kaydet(
         results
     )
 
+    # Eksik sütunları oluştur
     for column in COLUMNS:
 
         if column not in df.columns:
             df[column] = ""
 
+    # Sıralama
     df = df[
         COLUMNS
     ]
 
+    # Aynı firma tekrar etmesin
     df = df.drop_duplicates(
         subset=[
             "Unvan",
@@ -826,9 +834,11 @@ def excel_kaydet(
     )
 
 
-def excel_oku(
-    filename
-):
+# =============================================================================
+# EXCEL OKU
+# =============================================================================
+
+def excel_oku(filename):
 
     if not os.path.exists(
         filename
@@ -864,14 +874,21 @@ def excel_oku(
 
 
 # =============================================================================
-# PROGRESS
+# DOSYA YOLLARI
 # =============================================================================
+
+def dosya_temizle(grup_no):
+
+    return re.sub(
+        r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+",
+        "_",
+        grup_no
+    )
+
 
 def progress_yolu(grup_no):
 
-    temiz = re.sub(
-        r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+",
-        "_",
+    temiz = dosya_temizle(
         grup_no
     )
 
@@ -882,9 +899,7 @@ def progress_yolu(grup_no):
 
 def output_yolu(grup_no):
 
-    temiz = re.sub(
-        r"[^0-9A-Za-zÇĞİÖŞÜçğıöşü]+",
-        "_",
+    temiz = dosya_temizle(
         grup_no
     )
 
@@ -893,13 +908,19 @@ def output_yolu(grup_no):
     )
 
 
+# =============================================================================
+# PROGRESS OKU
+# =============================================================================
+
 def progress_oku(filename):
 
     if not os.path.exists(
         filename
     ):
+
         return {
-            "last_completed_page": 0
+            "last_completed_page": 0,
+            "total_firma": 0,
         }
 
     try:
@@ -915,9 +936,14 @@ def progress_oku(filename):
     except Exception:
 
         return {
-            "last_completed_page": 0
+            "last_completed_page": 0,
+            "total_firma": 0,
         }
 
+
+# =============================================================================
+# PROGRESS KAYDET
+# =============================================================================
 
 def progress_kaydet(
     filename,
@@ -926,16 +952,11 @@ def progress_kaydet(
 ):
 
     data = {
-        "last_completed_page":
-            last_completed_page,
-
-        "total_firma":
-            total,
-
-        "updated_at":
-            time.strftime(
-                "%Y-%m-%d %H:%M:%S"
-            ),
+        "last_completed_page": last_completed_page,
+        "total_firma": total,
+        "updated_at": time.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
     }
 
     with open(
@@ -974,6 +995,10 @@ def mevcut_sayfa(driver):
     return 1
 
 
+# =============================================================================
+# ERROR SAYFASI
+# =============================================================================
+
 def hata_sayfasinda_mi(driver):
 
     return (
@@ -983,7 +1008,7 @@ def hata_sayfasinda_mi(driver):
 
 
 # =============================================================================
-# SAYFANIN YÜKLENDİĞİNİ KONTROL
+# FİRMA LİSTESİ BEKLE
 # =============================================================================
 
 def firma_listesi_bekle(driver):
@@ -1003,7 +1028,7 @@ def firma_listesi_bekle(driver):
 
 
 # =============================================================================
-# SAYFA NUMARASI LINKİ
+# SAYFA LINKİ BUL
 # =============================================================================
 
 def sayfa_linki_bul(
@@ -1011,9 +1036,12 @@ def sayfa_linki_bul(
     hedef_sayfa
 ):
     """
-    Sayfadaki gerçek pagination linkini bulur.
+    Önce doğrudan hedef sayfa numarasını arar.
 
-    Doğrudan URL oluşturmuyoruz.
+    Örneğin:
+        47
+
+    linki varsa onu döndürür.
     """
 
     hedef = str(
@@ -1040,9 +1068,7 @@ def sayfa_linki_bul(
                 continue
 
             href = (
-                link.get_attribute(
-                    "href"
-                )
+                link.get_attribute("href")
                 or ""
             )
 
@@ -1053,7 +1079,114 @@ def sayfa_linki_bul(
                 "/unvan/"
                 in href
             ):
+
                 return link
+
+        except StaleElementReferenceException:
+            continue
+
+    return None
+
+
+# =============================================================================
+# SONRAKİ SAYFA LINKİNİ BUL
+# =============================================================================
+
+def sonraki_linki_bul(
+    driver,
+    current_page
+):
+    """
+    BTSO pagination yapısında:
+
+        Sonraki
+        Next
+        >
+        »
+        ›
+        veya doğrudan current+1
+
+    gibi seçenekleri arar.
+    """
+
+    hedef_sayfa = current_page + 1
+
+    # -------------------------------------------------------------------------
+    # 1. Önce doğrudan hedef numara
+    # -------------------------------------------------------------------------
+
+    link = sayfa_linki_bul(
+        driver,
+        hedef_sayfa
+    )
+
+    if link is not None:
+        return link
+
+    # -------------------------------------------------------------------------
+    # 2. Sonraki / Next / > / » / ›
+    # -------------------------------------------------------------------------
+
+    links = driver.find_elements(
+        By.TAG_NAME,
+        "a"
+    )
+
+    sonraki_textler = {
+        "SONRAKİ",
+        "SONRAKI",
+        "NEXT",
+        ">",
+        ">>",
+        "›",
+        "»",
+        "→",
+    }
+
+    for link in links:
+
+        try:
+
+            if not link.is_displayed():
+                continue
+
+            text = temiz_metin(
+                link.text
+            ).upper()
+
+            aria = temiz_metin(
+                link.get_attribute("aria-label")
+                or ""
+            ).upper()
+
+            title = temiz_metin(
+                link.get_attribute("title")
+                or ""
+            ).upper()
+
+            if (
+                text in sonraki_textler
+                or aria in sonraki_textler
+                or title in sonraki_textler
+                or "SONRAKİ" in aria
+                or "SONRAKI" in aria
+                or "NEXT" in aria
+            ):
+
+                href = (
+                    link.get_attribute("href")
+                    or ""
+                )
+
+                if (
+                    "/kayitli-uyeler/"
+                    in href
+                    and
+                    "/unvan/"
+                    in href
+                ):
+
+                    return link
 
         except StaleElementReferenceException:
             continue
@@ -1072,15 +1205,16 @@ def sonraki_sayfaya_gec(
 
     hedef = current_page + 1
 
-    link = sayfa_linki_bul(
+    link = sonraki_linki_bul(
         driver,
-        hedef
+        current_page
     )
 
     if link is None:
 
         print(
-            f"\n{hedef}. sayfa linki bulunamadı."
+            f"\n{hedef}. sayfaya ait "
+            "pagination linki bulunamadı."
         )
 
         return False
@@ -1090,11 +1224,17 @@ def sonraki_sayfaya_gec(
     try:
 
         driver.execute_script(
-            "arguments[0].scrollIntoView({block:'center'});",
+            """
+            arguments[0].scrollIntoView({
+                block: 'center'
+            });
+            """,
             link
         )
 
-        time.sleep(0.4)
+        time.sleep(
+            0.4
+        )
 
         try:
 
@@ -1116,7 +1256,7 @@ def sonraki_sayfaya_gec(
             d.current_url != eski_url
         )
 
-        # Liste gerçekten geldi mi?
+        # Yeni firma listesi gelsin
         firma_listesi_bekle(
             driver
         )
@@ -1133,7 +1273,11 @@ def sonraki_sayfaya_gec(
     except Exception as e:
 
         print(
-            f"\nSayfa {hedef} geçişi başarısız: {e}"
+            f"\nSayfa {hedef} geçişi başarısız:"
+        )
+
+        print(
+            f"    {e}"
         )
 
         return False
@@ -1183,98 +1327,6 @@ def hata_sayfasindan_geri_don(
 
 
 # =============================================================================
-# KALINAN SAYFAYA GİT
-# =============================================================================
-
-def resume_sayfasina_git(
-    driver,
-    hedef_sayfa
-):
-
-    if hedef_sayfa <= 1:
-
-        return True
-
-    mevcut = mevcut_sayfa(
-        driver
-    )
-
-    print(
-        f"\nKayıt dosyasına göre "
-        f"{hedef_sayfa}. sayfaya dönülüyor..."
-    )
-
-    while mevcut < hedef_sayfa:
-
-        print(
-            f"  {mevcut} → {mevcut + 1}"
-        )
-
-        basarili = False
-
-        for deneme in range(
-            1,
-            MAX_PAGE_RETRY + 1
-        ):
-
-            if hata_sayfasinda_mi(
-                driver
-            ):
-
-                if not hata_sayfasindan_geri_don(
-                    driver
-                ):
-                    time.sleep(
-                        10
-                    )
-                    continue
-
-            if sonraki_sayfaya_gec(
-                driver,
-                mevcut
-            ):
-
-                basarili = True
-                break
-
-            print(
-                f"    Deneme {deneme}/"
-                f"{MAX_PAGE_RETRY} başarısız."
-            )
-
-            # BTSO biraz nefes alsın
-            time.sleep(
-                min(
-                    5 * deneme,
-                    30
-                )
-            )
-
-            if hata_sayfasinda_mi(
-                driver
-            ):
-
-                hata_sayfasindan_geri_don(
-                    driver
-                )
-
-        if not basarili:
-
-            print(
-                f"\n{mevcut + 1}. sayfaya "
-                "ulaşılamadı."
-            )
-
-            return False
-
-        mevcut = mevcut_sayfa(
-            driver
-        )
-
-    return True
-
-
-# =============================================================================
 # ANA PROGRAM
 # =============================================================================
 
@@ -1284,10 +1336,13 @@ def main():
 
     results = []
 
+    output_file = ""
+    progress_file = ""
+
     try:
 
         # =====================================================================
-        # BTSO
+        # BTSO'YU AÇ
         # =====================================================================
 
         print(
@@ -1297,6 +1352,10 @@ def main():
         driver.get(
             BASE_URL
         )
+
+        # =====================================================================
+        # MANUEL AŞAMA
+        # =====================================================================
 
         print(
             "\n" + "=" * 70
@@ -1315,7 +1374,7 @@ def main():
         )
 
         print(
-            "2. CAPTCHA'yı gir."
+            "2. CAPTCHA / doğrulama kodunu gir."
         )
 
         print(
@@ -1335,7 +1394,7 @@ def main():
         )
 
         # =====================================================================
-        # Firma listesi gelmesini bekle
+        # FİRMA LİSTESİ
         # =====================================================================
 
         firma_listesi_bekle(
@@ -1343,13 +1402,11 @@ def main():
         )
 
         # =====================================================================
-        # Grup
+        # MESLEK GRUBU
         # =====================================================================
 
-        grup_no, grup_adi = (
-            grup_bilgisi_al(
-                driver
-            )
+        grup_no, grup_adi = grup_bilgisi_al(
+            driver
         )
 
         if not grup_no:
@@ -1371,7 +1428,7 @@ def main():
         )
 
         # =====================================================================
-        # Dosyalar
+        # DOSYALAR
         # =====================================================================
 
         output_file = output_yolu(
@@ -1383,17 +1440,23 @@ def main():
         )
 
         print(
-            f"\nExcel:"
-            f" {output_file}"
+            "\nExcel:"
         )
 
         print(
-            f"Progress:"
-            f" {progress_file}"
+            f"  {output_file}"
+        )
+
+        print(
+            "\nProgress:"
+        )
+
+        print(
+            f"  {progress_file}"
         )
 
         # =====================================================================
-        # Önceki kayıt var mı?
+        # ÖNCEKİ İLERLEME
         # =====================================================================
 
         progress = progress_oku(
@@ -1406,6 +1469,10 @@ def main():
                 0
             )
         )
+
+        # ---------------------------------------------------------------------
+        # DAHA ÖNCE KAYIT VARSA
+        # ---------------------------------------------------------------------
 
         if last_completed_page > 0:
 
@@ -1426,44 +1493,106 @@ def main():
             )
 
             print(
-                f"Tamamlanan son sayfa: "
+                f"Tamamlanan son sayfa : "
                 f"{last_completed_page}"
             )
 
             print(
-                f"Mevcut firma sayısı: "
+                f"Mevcut firma sayısı  : "
                 f"{len(results):,}"
-            )
-
-            print(
-                "Kaldığı yerden devam edilecek."
             )
 
             print(
                 "=" * 70
             )
 
-            # -----------------------------------------------------------------
-            # Örneğin 16 tamamlandıysa 17'ye git
-            # -----------------------------------------------------------------
+            print(
+                "\nŞimdi Chrome'da devam edeceğiniz "
+                "sayfayı MANUEL olarak açın."
+            )
 
-            if not resume_sayfasina_git(
-                driver,
-                last_completed_page + 1
-            ):
+            print(
+                f"Önerilen sayfa: "
+                f"{last_completed_page + 1}"
+            )
 
-                print(
-                    "\nKaldığı sayfaya ulaşılamadı."
-                )
+            print(
+                "\nÖrneğin son kayıt 100 ise:"
+            )
 
-                print(
-                    "İşlem sonlandırıldı."
-                )
+            print(
+                "Chrome'da 101. sayfayı açın."
+            )
 
-                return
+            print(
+                "Firma listesi göründüğünde ENTER'a basın."
+            )
+
+            input(
+                "\nHazır olduğunuzda ENTER..."
+            )
+
+        else:
+
+            print(
+                "\nİlk çalışma."
+            )
+
+            print(
+                "Mevcut sayfadan başlanacak."
+            )
 
         # =====================================================================
-        # Session
+        # MEVCUT SAYFAYI BELİRLE
+        # =====================================================================
+
+        current_page = mevcut_sayfa(
+            driver
+        )
+
+        print(
+            "\n" + "=" * 70
+        )
+
+        print(
+            f"BAŞLANGIÇ SAYFASI: {current_page}"
+        )
+
+        print(
+            "=" * 70
+        )
+
+        # ---------------------------------------------------------------------
+        # UYARI
+        # ---------------------------------------------------------------------
+
+        if last_completed_page > 0:
+
+            beklenen = last_completed_page + 1
+
+            if current_page != beklenen:
+
+                print(
+                    "\nUYARI!"
+                )
+
+                print(
+                    f"Excel'e göre beklenen sayfa: "
+                    f"{beklenen}"
+                )
+
+                print(
+                    f"Chrome'daki mevcut sayfa: "
+                    f"{current_page}"
+                )
+
+                print(
+                    "Program Chrome'daki mevcut "
+                    "sayfadan devam edecek."
+                )
+
+        # =====================================================================
+        # SESSION
         # =====================================================================
 
         session = session_olustur(
@@ -1478,7 +1607,10 @@ def main():
 
         while True:
 
-            # Error'a düşmüşse geri dön
+            # -----------------------------------------------------------------
+            # ERROR SAYFASI
+            # -----------------------------------------------------------------
+
             if hata_sayfasinda_mi(
                 driver
             ):
@@ -1493,11 +1625,22 @@ def main():
 
                     break
 
+                current_page = mevcut_sayfa(
+                    driver
+                )
+
+            # -----------------------------------------------------------------
+            # MEVCUT SAYFA
+            # -----------------------------------------------------------------
+
             current_page = mevcut_sayfa(
                 driver
             )
 
-            # Aynı sayfa tekrar işlenmesin
+            # -----------------------------------------------------------------
+            # AYNI SAYFA KONTROLÜ
+            # -----------------------------------------------------------------
+
             if current_page in visited_pages:
 
                 print(
@@ -1510,6 +1653,10 @@ def main():
             visited_pages.add(
                 current_page
             )
+
+            # -----------------------------------------------------------------
+            # BAŞLIK
+            # -----------------------------------------------------------------
 
             print(
                 "\n" + "=" * 70
@@ -1524,13 +1671,17 @@ def main():
             )
 
             # =================================================================
-            # Session / CSRF güncelle
+            # SESSION / COOKIE
             # =================================================================
 
             session_cookie_guncelle(
                 session,
                 driver
             )
+
+            # =================================================================
+            # CSRF
+            # =================================================================
 
             csrf_token = csrf_token_al(
                 driver
@@ -1539,17 +1690,21 @@ def main():
             if not csrf_token:
 
                 print(
-                    "CSRF token bulunamadı."
+                    "\nCSRF token bulunamadı."
                 )
 
                 print(
-                    "Sayfa yeniden okunmaya çalışılıyor..."
+                    "Sayfa yenileniyor..."
                 )
 
                 driver.refresh()
 
                 time.sleep(
                     3
+                )
+
+                firma_listesi_bekle(
+                    driver
                 )
 
                 csrf_token = csrf_token_al(
@@ -1559,17 +1714,17 @@ def main():
             if not csrf_token:
 
                 print(
-                    "CSRF token alınamadı."
+                    "\nCSRF token alınamadı."
                 )
 
                 print(
-                    "İşlem sonlandırılıyor."
+                    "İşlem durduruldu."
                 )
 
                 break
 
             # =================================================================
-            # Firmalar
+            # FİRMA LİSTESİ
             # =================================================================
 
             firmalar = firma_listesini_oku(
@@ -1584,21 +1739,28 @@ def main():
             if not firmalar:
 
                 print(
-                    "Bu sayfada firma bulunamadı."
+                    "\nBu sayfada firma bulunamadı."
+                )
+
+                print(
+                    "İşlem durduruldu."
                 )
 
                 break
 
             # =================================================================
-            # Detail POST
+            # DETAIL POST
             # =================================================================
 
             referer = driver.current_url
 
-            # Önceden alınmış unvanları set yap
+            # Daha önce alınmış unvanlar
             mevcut_unvanlar = {
                 temiz_metin(
-                    row.get("Unvan", "")
+                    row.get(
+                        "Unvan",
+                        ""
+                    )
                 )
                 for row in results
             }
@@ -1612,9 +1774,9 @@ def main():
                     firma["unvan"]
                 )
 
-                # -----------------------------------------------------------------
-                # Daha önce alınmışsa atla
-                # -----------------------------------------------------------------
+                # -------------------------------------------------------------
+                # ZATEN VARSA ATLA
+                # -------------------------------------------------------------
 
                 if unvan in mevcut_unvanlar:
 
@@ -1624,6 +1786,10 @@ def main():
                     )
 
                     continue
+
+                # -------------------------------------------------------------
+                # FİRMA
+                # -------------------------------------------------------------
 
                 print(
                     f"    [{index}/{len(firmalar)}] "
@@ -1637,7 +1803,10 @@ def main():
                     referer=referer,
                 )
 
-                # Grup detail'da bulunamadıysa
+                # -------------------------------------------------------------
+                # GRUP BİLGİSİ BOŞSA ANA GRUPTAN DOLDUR
+                # -------------------------------------------------------------
+
                 if not detay["Meslek Grubu No"]:
 
                     detay[
@@ -1650,6 +1819,10 @@ def main():
                         "Meslek Grubu"
                     ] = grup_adi
 
+                # -------------------------------------------------------------
+                # SONUCA EKLE
+                # -------------------------------------------------------------
+
                 results.append(
                     detay
                 )
@@ -1659,15 +1832,16 @@ def main():
                 )
 
                 print(
-                    f"        "
-                    f"İlçe: "
+                    f"        İlçe: "
                     f"{detay['İlçe'] or '-'}"
                     f" | Web: "
                     f"{detay['Web'] or '-'}"
                 )
 
-                # Normal çok kısa bekleme
-                # Rate-limit olursa fonksiyon zaten daha uzun bekler.
+                # -------------------------------------------------------------
+                # NORMAL BEKLEME
+                # -------------------------------------------------------------
+
                 if index < len(firmalar):
 
                     time.sleep(
@@ -1693,46 +1867,34 @@ def main():
             )
 
             print(
-                "\n  ✓ Sayfa tamamlandı."
+                "\n" + "-" * 70
             )
 
             print(
-                f"  ✓ Toplam firma: "
-                f"{len(results):,}"
+                "✓ SAYFA TAMAMLANDI"
             )
 
             print(
-                f"  ✓ Progress: "
-                f"sayfa {current_page}"
+                f"✓ Sayfa       : {current_page}"
+            )
+
+            print(
+                f"✓ Toplam firma: {len(results):,}"
+            )
+
+            print(
+                f"✓ Excel       : {output_file}"
+            )
+
+            print(
+                "-" * 70
             )
 
             # =================================================================
             # SONRAKİ SAYFA
             # =================================================================
 
-            next_page = (
-                current_page + 1
-            )
-
-            next_link = (
-                sayfa_linki_bul(
-                    driver,
-                    next_page
-                )
-            )
-
-            # Sonraki sayfa yoksa tamamlandı
-            if next_link is None:
-
-                print(
-                    "\nSonraki sayfa bulunamadı."
-                )
-
-                print(
-                    "Son sayfaya ulaşılmış olabilir."
-                )
-
-                break
+            next_page = current_page + 1
 
             print(
                 f"\n{next_page}. sayfaya geçiliyor..."
@@ -1745,7 +1907,10 @@ def main():
                 MAX_PAGE_RETRY + 1
             ):
 
-                # Eğer hata sayfasına düştüysek geri dön
+                # -------------------------------------------------------------
+                # ERROR SAYFASI
+                # -------------------------------------------------------------
+
                 if hata_sayfasinda_mi(
                     driver
                 ):
@@ -1754,32 +1919,20 @@ def main():
                         driver
                     ):
 
+                        print(
+                            "Hata sayfasından "
+                            "dönülemedi."
+                        )
+
                         time.sleep(
                             10
                         )
 
                         continue
 
-                # Gerçek pagination linkini tekrar bul
-                next_link = (
-                    sayfa_linki_bul(
-                        driver,
-                        next_page
-                    )
-                )
-
-                if next_link is None:
-
-                    print(
-                        f"    {next_page}. sayfa linki "
-                        "bulunamadı."
-                    )
-
-                    time.sleep(
-                        5 * deneme
-                    )
-
-                    continue
+                # -------------------------------------------------------------
+                # SAYFAYA GEÇ
+                # -------------------------------------------------------------
 
                 if sonraki_sayfaya_gec(
                     driver,
@@ -1807,13 +1960,9 @@ def main():
                     wait_time
                 )
 
-                if hata_sayfasinda_mi(
-                    driver
-                ):
-
-                    hata_sayfasindan_geri_don(
-                        driver
-                    )
+            # =================================================================
+            # SAYFA GEÇİŞİ BAŞARISIZ
+            # =================================================================
 
             if not basarili:
 
@@ -1840,8 +1989,13 @@ def main():
                 )
 
                 print(
-                    "Tekrar çalıştırırsanız "
-                    f"{next_page}. sayfadan devam edecek."
+                    "\nExcel ve progress kaydedildi."
+                )
+
+                print(
+                    "Tekrar çalıştırdığınızda "
+                    "Chrome'da sonraki sayfayı "
+                    "manuel açabilirsiniz."
                 )
 
                 print(
@@ -1851,7 +2005,7 @@ def main():
                 break
 
         # =====================================================================
-        # FINAL
+        # FINAL EXCEL
         # =====================================================================
 
         excel_kaydet(
@@ -1885,22 +2039,30 @@ def main():
             "=" * 70
         )
 
+    # =========================================================================
+    # CTRL + C
+    # =========================================================================
+
     except KeyboardInterrupt:
 
         print(
             "\n\nKullanıcı tarafından durduruldu."
         )
 
-        if results:
+        if results and output_file:
 
             excel_kaydet(
                 results,
                 output_file
             )
 
-        print(
-            "Mevcut veriler Excel'e kaydedildi."
-        )
+            print(
+                "Mevcut veriler Excel'e kaydedildi."
+            )
+
+    # =========================================================================
+    # BEKLENMEYEN HATA
+    # =========================================================================
 
     except Exception as e:
 
@@ -1914,7 +2076,7 @@ def main():
 
         try:
 
-            if results:
+            if results and output_file:
 
                 excel_kaydet(
                     results,
@@ -1923,13 +2085,13 @@ def main():
 
                 print(
                     f"Toplanan {len(results):,} "
-                    "firma kaydedildi."
+                    "firma Excel'e kaydedildi."
                 )
 
         except Exception as save_error:
 
             print(
-                "Excel kaydedilirken de hata oluştu:"
+                "\nExcel kaydedilirken de hata oluştu:"
             )
 
             print(
