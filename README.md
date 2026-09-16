@@ -34,6 +34,10 @@ Sütun isimlerinde yazım hatası, eksik karakter veya farklı adlandırma bulun
 |---|---|---|
 | Örnek Ltd. Şti. | Örnek Mah. Örnek Sok. | Şişli |
 
+### İstanbul İlçe Bilgisi
+
+İstanbul için hazırlanan ve `ILCE` bilgisi bulunmayan firma listelerinde, adreslerden ilçe bilgisini oluşturmak için `adrestenilce.py` programı kullanılabilir. Programın çalışabilmesi için `istanbul_ilce_verileri.json` dosyasının proje klasöründe bulunması gerekir.
+
 ## Şehir ve İlçe Ayarları
 
 Şehir ve ilçe bilgileri `ilceler.json` dosyasından okunur.  
