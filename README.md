@@ -58,6 +58,12 @@ Excel dosyasında bazı satırlar **turuncu renkle** işaretlenir. Bu satırlar,
 
 **Beyaz renkteki satırlar**, otomatik doğrulama kriterlerini karşılayan ve firma ile web sitesi arasında güçlü eşleşme bulunan sonuçlardır.
 
+## İlerleme Kaydı
+
+Program, işlem sırasında ilerlemeyi `sitemailbul_ilerleme.json` dosyasına otomatik olarak kaydeder. Program yarıda kesilirse, sonraki çalıştırmada tamamlanan firmalar atlanarak kaldığı yerden devam edilebilir.
+
+Kaynak `firmalar.xlsx` dosyası değiştirildiğinde mevcut ilerleme kaydı geçersiz kabul edilir ve işlem yeniden başlatılır.
+
 ## Proje Yapısı
 
 ```text
@@ -67,6 +73,9 @@ firmalar/
 ├── firmalar_web_mail.xlsx
 ├── ilceler.json
 └── sitemailbul.py
+
+Çalışma sırasında oluşabilir:
+└── sitemailbul_ilerleme.json
 ```
 
 ## Kurulum
@@ -128,6 +137,25 @@ Program, Selenium ile açık bir Chrome oturumuna bağlanarak çalışır. Bu ne
      ```
 
 Chrome farklı bir klasöre kurulmuşsa komuttaki dosya yolunu kendi sisteminize göre güncelleyin.
+
+### Google CAPTCHA veya Chrome Profil Sorunları
+
+Google aramalarında CAPTCHA ile karşılaşılması veya Selenium ile Chrome bağlantısında beklenmeyen bir sorun oluşması durumunda, programın kullandığı ayrı Chrome profilini sıfırlayabilirsiniz.
+
+- ### macOS
+
+     ```bash
+     rm -rf "$HOME/chrome_selenium"
+     ```
+
+- ### Windows PowerShell
+
+     ```bash
+     Remove-Item -Recurse -Force "$env:USERPROFILE\chrome_selenium"
+     ```
+Ardından Chrome'u tamamen kapatıp, **Chrome Uzaktan Hata Ayıklama** bölümündeki komutu tekrar çalıştırın ve programı yeniden başlatın.
+
+> `chrome_selenium` yalnızca program için kullanılan ayrı Chrome profilidir. Bu klasörün silinmesi normal Chrome profilinizi etkilemez.  
 
 ## Programı Çalıştırma
 
