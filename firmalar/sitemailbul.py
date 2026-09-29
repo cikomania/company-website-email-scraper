@@ -103,43 +103,56 @@ with open(
 
 
 # =====================================================
+# TÜRKÇE NORMALİZE
+# =====================================================
+
+def normalize(text):
+    text = str(text).upper().strip()
+
+    replacements = {
+        "Ç": "C",
+        "Ğ": "G",
+        "İ": "I",
+        "Ö": "O",
+        "Ş": "S",
+        "Ü": "U",
+    }
+
+    for eski, yeni in replacements.items():
+        text = text.replace(eski, yeni)
+
+    return text
+
+
+# =====================================================
 # ŞEHİR SEÇ
 # =====================================================
 
-def sehir_sec():
+SEHIRLER_NORMALIZED = {
+    normalize(sehir): sehir
+    for sehir in SEHIRLER
+}
 
+
+def sehir_sec():
     print("\n" + "=" * 50)
     print("ŞEHİR SEÇİMİ")
     print("=" * 50)
-
-    print("Mevcut şehirler:")
-    print(", ".join(sorted(SEHIRLER.keys())))
-
+    print("Şehir adını girin.")
+    print("Örnek: istanbul")
     print("=" * 50)
 
     while True:
+        secim = input("Şehir adı: ").strip()
+        secim_normalized = normalize(secim)
 
-        secim = input(
-            "Şehir adını girin: "
-        ).strip()
+        if secim_normalized in SEHIRLER_NORMALIZED:
+            return SEHIRLER_NORMALIZED[secim_normalized]
 
-        bulunan_sehir = None
-
-        for sehir in SEHIRLER:
-
-            if sehir.casefold() == secim.casefold():
-
-                bulunan_sehir = sehir
-                break
-
-        if bulunan_sehir:
-            return bulunan_sehir
-
-        print("\n⚠ Şehir bulunamadı.")
-        print(
-            "Lütfen JSON dosyasındaki şehirlerden "
-            "birini girin.\n"
-        )
+        print()
+        print(f"'{secim}' bulunamadı.")
+        print("Lütfen geçerli bir şehir adı girin.")
+        print()
 
 
 # =====================================================
@@ -609,6 +622,7 @@ IGNORE_DOMAINLER = {
     "x.com",
     "tiktok.com",
 
+    "hepsiemlak.com",
     "bulurum.com",
     "find.com.tr",
     "118.com.tr",
@@ -1271,7 +1285,6 @@ def mail_adresi_gecersiz_mi(mail):
         "user",
         "username",
         "email",
-        "mail",
         "yourmail",
         "yourname",
         "name",
@@ -1300,6 +1313,7 @@ def mail_adresi_gecersiz_mi(mail):
         "domain.com",
         "domain.com.tr",
         "nginx.com",
+        "hepsiemlak.com",
     }
 
     if domain in yasak_domain:
