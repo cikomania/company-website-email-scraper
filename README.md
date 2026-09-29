@@ -34,21 +34,13 @@ Sütun isimlerinde yazım hatası, eksik karakter veya farklı adlandırma bulun
 |---|---|---|
 | Örnek Ltd. Şti. | Örnek Mah. Örnek Sok. | Şişli |
 
-### Türkiye İlçe Bilgisi
-
-`firmalar.xlsx` dosyasında `UNVAN` ve `ADRES` bilgileri bulunuyor ancak `ILCE` bilgisi eksikse, `ilcebul.py` programı kullanılarak adreslerden Türkiye genelinde ilçe bilgisi otomatik olarak tespit edilebilir.
-
-Program, bulunan ilçe bilgisini tekrar `firmalar.xlsx` dosyasına yazar. `ILCE` sütunu mevcut değilse otomatik olarak oluşturur.
-
-İlçe bilgileri tamamlandıktan sonra `sitemailbul.py` çalıştırılarak firmaların web sitesi ve e-posta bilgilerinin bulunması işlemine devam edilebilir.  
-
-İlçe tespiti için harici bir JSON dosyasına ihtiyaç duyulmaz; Türkiye genelindeki ilçe listesi `ilcebul.py` içerisinde yer almaktadır.
-
 ## Şehir ve İlçe Ayarları
 
 Şehir ve ilçe bilgileri `ilceler.json` dosyasından okunur.  
 
-Program çalıştırıldığında mevcut şehirler arasından işlem yapılacak şehir seçilir. Seçilen şehre ait ilçeler otomatik olarak yüklenir.
+`firmalar.xlsx` dosyasında `UNVAN` ve `ADRES` bilgileri bulunuyor ancak `ILCE` bilgisi eksikse, `ilcebul.py` programı kullanılarak adreslerden ilçe bilgisi alınabilir. Program başlangıcında işlem yapılacak şehir seçilir ve ilgili ilçeler `ilceler.json` dosyasından yüklenir. Bulunan ilçe bilgileri tekrar `firmalar.xlsx` dosyasına yazılır. `ILCE` sütunu mevcut değilse otomatik olarak oluşturulur.
+
+`ILCE` bilgileri tamamlandıktan sonra ana program `sitemailbul.py` normal şekilde çalıştırılabilir.  
 
 Başka şehirlerde çalışabilmek için yalnızca `ilceler.json` dosyasını güncellemeniz yeterlidir. Python dosyasında değişiklik yapmanız gerekmez.
 
